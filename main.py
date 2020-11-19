@@ -496,7 +496,7 @@ class mywindow(QtWidgets.QMainWindow):
                 y.append(self.ux_ret(i))
             plt.plot(x, y)
             plt.grid(True)
-            plt.title(title="Перемещения")
+            plt.title("Перемещения")
             L = 0
             for i in range(len(self.Rod_list)):
                 L += self.Rod_list[i][0]
