@@ -36,7 +36,7 @@
        <bool>false</bool>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -279,9 +279,9 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>230</y>
+          <y>360</y>
           <width>191</width>
-          <height>421</height>
+          <height>291</height>
          </rect>
         </property>
         <property name="title">
@@ -353,6 +353,38 @@
              <string>Нормальные напряжения</string>
             </property>
            </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>230</y>
+          <width>153</width>
+          <height>88</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string/>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Введите шаг</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit_5"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_10">
+           <property name="text">
+            <string>Показать расчеты</string>
+           </property>
           </widget>
          </item>
         </layout>

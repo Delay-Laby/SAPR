@@ -8,7 +8,8 @@ from PyQt5.QtCore import Qt
 import numpy as np
 import matplotlib.pyplot as plt
 
-#Cохранение в фаил, отрисовка, процессор, процессор
+
+
 
 class mywindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -22,6 +23,11 @@ class mywindow(QtWidgets.QMainWindow):
         self.ui.Rod_wiget.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
         self.ui.Node_wiget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         self.ui.Node_wiget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        self.ui.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        self.ui.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        self.ui.tableWidget.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        self.ui.tableWidget.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+
         self.ui.pushButton.clicked.connect(self.dobR)
         self.ui.pushButton_3.clicked.connect(self.dobN)
         self.ui.pushButton_5.clicked.connect(self.Del)
@@ -41,9 +47,13 @@ class mywindow(QtWidgets.QMainWindow):
         self.load_flag = False
         self.ui.pushButton_2.clicked.connect(self.processor)
         self.U = []
-
-
-
+        self.draw_flag = False
+        self.ui.pushButton_6.clicked.connect(self.nx_plot)
+        self.ui.pushButton_7.clicked.connect(self.ux_plot)
+        self.ui.pushButton_8.clicked.connect(self.sigm_plot)
+        self.ui.lineEdit.textChanged.connect(self.point_calc)
+        self.ui.pushButton_10.clicked.connect(self.res_tab)
+        self.ui.pushButton_9.clicked.connect(self.savepj)
 
 
     def file_save(self):
@@ -81,9 +91,11 @@ class mywindow(QtWidgets.QMainWindow):
 
             with f:
                 Rdata = f.readline()
+
                 res = [int(i) for i in Rdata.split() if i.isdigit()]
                 self.Rod_list.clear()
                 self.load_flag = True
+                self.draw_flag = False
                 for i in range(self.ui.Rod_wiget.rowCount()):
                     self.ui.Rod_wiget.removeRow(0)
                 for i in range(self.ui.Node_wiget.rowCount()):
@@ -97,7 +109,7 @@ class mywindow(QtWidgets.QMainWindow):
                     self.ui.Rod_wiget.insertRow(self.ui.Rod_wiget.rowCount())
                 for i in range(len(self.Rod_list)):
                     for j in range(len(self.Rod_list[0])):
-                        self.ui.Rod_wiget.setItem(i,j,QTableWidgetItem(f"{self.Rod_list[i][j]}"))        #хуета
+                        self.ui.Rod_wiget.setItem(i,j,QTableWidgetItem(f"{self.Rod_list[i][j]}"))        #????
 
                 Ndata = f.readline()
                 res = [int(i) for i in Ndata.split() if i.isdigit()]
@@ -130,6 +142,39 @@ class mywindow(QtWidgets.QMainWindow):
                     self.ui.checkBox.setCheckState(2)
                     self.z+=3
                 self.load_flag=False
+
+    def savepj(self):
+       if self.draw_flag and self.ui.tableWidget.rowCount()>0 :
+            name = QFileDialog.getSaveFileName(self, "Save File", filter="*.kpr")[0]
+            if name != "":
+                file = open(name, 'w')
+                file.write(f"Параметры {len(self.Rod_list)} стержней")
+                for i in self.Rod_list:
+                    file.write("\n")
+                    for j in i:
+                        file.write(str(j) + " ")
+                file.write(f"\nПараметры {len(self.Node_list)}  узлов ")
+                for i in self.Node_list:
+                    file.write("\n")
+                    for j in i:
+                        file.write(str(j) + " ")
+                if self.z == 1:
+                    file.write("\nЛевая заделка")
+                elif self.z == 2:
+                    file.write("\nПравая заделка")
+                elif self.z == 3:
+                    file.write("\nОбе заделки")
+                else:
+                    file.write("\nНет заделок")
+                file.write(f"\n Расчеты")
+                for i in range(self.ui.tableWidget.rowCount()):
+                    file.write("\n")
+                    for j in range(self.ui.tableWidget.columnCount()):
+                        if i==0 and j ==0:
+                            file.write("X   N(x)  u(x) sigm\n")
+                        file.write(str(self.ui.tableWidget.item(i,j).text())+" ")
+
+                file.close()
 
 
 
@@ -204,6 +249,7 @@ class mywindow(QtWidgets.QMainWindow):
                     self.Node_list[self.ui.Node_wiget.currentRow()][self.ui.Node_wiget.currentColumn()] = int(p)
                     if  int(p) <= 0 or int(p) > self.ui.Rod_wiget.rowCount()+1:
                         self.ui.Node_wiget.removeRow(self.ui.Node_wiget.currentRow())
+                        print(self.Node_list)
                         print(self.Node_list)
 
                         raise Exception()
@@ -376,32 +422,121 @@ class mywindow(QtWidgets.QMainWindow):
                 A[self.ui.Rod_wiget.rowCount()][self.ui.Rod_wiget.rowCount() - 1] = 0
 
             try: delta = np.linalg.solve(A,b)
-            except: return
-           # print(b)
-          #  print(A)
-          #  print(delta)
-            #    A[i][i]=self.Rod_list[0][1]*self.Rod_list[0][2]/self.Rod_list[0][0]
-                # A[i][i]=self.Rod_list[i][1]*self.Rod_list[i][2]/self.Rod_list[i][0]+A[i-1][i-1]
-                    #A[i+1][i]=-(A[i][i]-A[i-1][i-1])
-                    #A[i][i+1]=A[i+1][i]
+            except:
+                self.draw_flag = False
+                return
+            if self.z==1:
+                delta[0] = 0
+            elif self.z==2:
+
+                delta[-1] = 0
+            elif self.z == 3:
+                delta[0] = 0
+                delta[-1] = 0
+
             U = []
             U.append(*delta[0])
             for i in range(len(delta)-2):
                 U.append(*delta[i+1])
                 U.append(*delta[i+1])
             U.append(*delta[-1])
-            self.savep(qxforce,U)
+           # print(delta)
+           # print(U)
+            self.savep(U)
+            self.draw_flag = True
             #self.ux_ret(float(self.Rod_list[0][3]))
-            step = 0.01             #шаг дискретизации на графике
-            x=np.arange(0,sum([i[0] for i in self.Rod_list])+step,step)
-            y=[]
+            #self.zavis()
+    def zavis(self):  #self,U1,U2,x,n,qx
+        res = self.rod_conventer(0)
+        l=0
+
+       # U1 = res[0]
+        #U2 = res[1]
+        #n = res[3]
+        #qx = res[4]
+        #print(
+        #    f"N1(x):{self.Rod_list[n][1] * self.Rod_list[n][2] / self.Rod_list[n][0] * (U2 - U1)} +({(qx * self.Rod_list[n][0] / 2 * (1 - 2 / self.Rod_list[n][0]))})X")
+        for i in range(self.ui.Rod_wiget.rowCount()):
+            l+=self.Rod_list[i][0]
+            res = self.rod_conventer(l)
+
+            U1 = res[0]
+            U2 = res[1]
+            n = res[3]
+            qx = res[4]
+            print(f"N{i+1}(x) = {self.Rod_list[n][1] * self.Rod_list[n][2] / self.Rod_list[n][0] * (U2 - U1)} +({ (qx * self.Rod_list[n][0] / 2 * (1 - 2  / self.Rod_list[n][0]))})X")
+
+
+    def nx_plot(self):
+        if self.draw_flag:
+            step = 0.01  # шаг дискретизации на графике
+            x = np.arange(0, sum([i[0] for i in self.Rod_list]) + step, step)
+            y = []
 
             for i in x:
-               y.append(self.sigm_ret(i))
-            plt.plot(x,y)
+                y.append(self.nx_ret(i))
+
+            plt.plot(x, y)
+            plt.grid(True)
+            plt.title('Продольные силы')
+            L = 0
+            for i in range(len(self.Rod_list)):
+                L+=self.Rod_list[i][0]
+                plt.axvline(L,color='k')
+            plt.axhline(0, color='k')
             plt.show()
 
-    def savep(self,qx,u):
+    def ux_plot(self):
+        if self.draw_flag:
+            step = 0.01  # шаг дискретизации на графике
+            x = np.arange(0, sum([i[0] for i in self.Rod_list]) + step, step)
+            y = []
+
+            for i in x:
+                y.append(self.ux_ret(i))
+            plt.plot(x, y)
+            plt.grid(True)
+            plt.title(title="Перемещения")
+            L = 0
+            for i in range(len(self.Rod_list)):
+                L += self.Rod_list[i][0]
+                plt.axvline(L, color='k')
+            plt.axhline(0, color='k')
+            plt.show()
+
+    def sigm_plot(self):
+        if self.draw_flag:
+            step = 0.01  # шаг дискретизации на графике
+            x = np.arange(0, sum([i[0] for i in self.Rod_list]) + step, step)
+            y = []
+            for i in x:
+                y.append(self.sigm_ret(i))
+            plt.plot(x, y)
+            plt.grid(True)
+            plt.title(" Нормальные напряжения")
+            L = 0
+            for i in range(len(self.Rod_list)):
+                L += self.Rod_list[i][0]
+                plt.axvline(L, color='k')
+            plt.axhline(0, color='k')
+            plt.show()
+
+    def point_calc(self):
+        if self.draw_flag:
+            try:
+                p =  float(self.ui.lineEdit.text())
+                self.ui.lineEdit_2.setText(str(self.nx_ret(p)))
+                self.ui.lineEdit_3.setText(str(self.ux_ret(p)))
+                self.ui.lineEdit_4.setText(str(self.sigm_ret(p)))
+            except:
+                self.ui.lineEdit_2.setText("none")
+                self.ui.lineEdit_3.setText("none")
+                self.ui.lineEdit_4.setText("none")
+                return
+
+
+
+    def savep(self,u):
 
         self.U=u
 
@@ -409,11 +544,9 @@ class mywindow(QtWidgets.QMainWindow):
     def nx_ret(self,x):
 
         res = self.rod_conventer(x)
-        return self.nx(res[0],res[1],res[2],res[3],res[4])
 
-
-
-
+        p = self.nx(res[0], res[1], res[2], res[3], res[4])
+        return p
 
     def nx(self,U1,U2,x,n,qx):
 
@@ -425,8 +558,9 @@ class mywindow(QtWidgets.QMainWindow):
             i=0
             #nq=0
             if x == 0:
-                i+=1
+
                 x-=float(self.Rod_list[i][0])
+                i += 1
             while x>0:
                x-=self.Rod_list[i][0]
                i+=1
@@ -441,14 +575,15 @@ class mywindow(QtWidgets.QMainWindow):
 #Дебаг
     def ux_ret(self,x):
         if x<=sum([i[0] for i in self.Rod_list]):
-            print(x)
+            #print(x)
             res=self.rod_conventer(x)
-            print(res[0],res[1],res[2],res[3],res[4])
-            return self.ux(res[0],res[1],res[2],res[3],res[4])
+            #print(res[0],res[1],res[2],res[3],res[4])
+            p = self.ux(res[0], res[1], res[2], res[3], res[4])
+            return p
 
     def ux(self,U1,U2,x,n,qx): #U1 - начало U2- конец стержня
-        return ((1-x/self.Rod_list[n][0])*U1+((x*U2)/self.Rod_list[n][0])+(((qx*self.Rod_list[n][0]**2*x)/(2*self.Rod_list[n][1] * self.Rod_list[n][2]*self.Rod_list[n][0]))*(1-x/self.Rod_list[n][0])))
-
+        #return ((1-x/self.Rod_list[n][0])*U1+((x*U2)/self.Rod_list[n][0])+(((qx*self.Rod_list[n][0]**2*x)/(2*self.Rod_list[n][1] * self.Rod_list[n][2]*self.Rod_list[n][0]))*(1-x/self.Rod_list[n][0])))
+        return U1+x/self.Rod_list[n][0]*(U2-U1)+qx*self.Rod_list[n][0]**2*x/(2*self.Rod_list[n][1] * self.Rod_list[n][2])*(1-x/self.Rod_list[n][0])
 
     def sigm(self, U1, U2, x, n, qx):
         return (self.Rod_list[n][1] * self.Rod_list[n][2] / self.Rod_list[n][0] * (U2 - U1) + qx * self.Rod_list[n][
@@ -456,7 +591,46 @@ class mywindow(QtWidgets.QMainWindow):
 
     def sigm_ret(self,x):
         res = self.rod_conventer(x)
-        return self.sigm(res[0], res[1], res[2], res[3], res[4])
+        p = self.sigm(res[0], res[1], res[2], res[3], res[4])
+        return p
+
+    def res_tab(self):
+
+        try:
+            for i in range(self.ui.tableWidget.rowCount()):
+                self.ui.tableWidget.removeRow(0)
+            p = float(self.ui.lineEdit_5.text())
+            curr_step = p
+            i = 0
+            j=0
+            L= self.Rod_list[0][0]
+
+            while 0<=curr_step<=sum([i[0] for i in self.Rod_list]):
+
+                self.ui.tableWidget.insertRow(self.ui.tableWidget.rowCount())
+                self.ui.tableWidget.setItem(i, 0, QTableWidgetItem(f"{round(curr_step,5)}"))
+                self.ui.tableWidget.setItem(i, 1, QTableWidgetItem(f"{round(self.nx_ret(curr_step),5)}"))
+                self.ui.tableWidget.setItem(i, 2, QTableWidgetItem(f"{round(self.ux_ret(curr_step),5)}"))
+                self.ui.tableWidget.setItem(i, 3, QTableWidgetItem(f"{round(self.sigm_ret(curr_step),5)}"))
+                if (curr_step > L):
+                    j += 1
+                    L+=self.Rod_list[j][0]
+
+                if abs(self.sigm_ret(curr_step))>= self.Rod_list[j][3]:
+                    self.ui.tableWidget.item(i,3).setBackground(Qt.red)
+                curr_step+= p
+                i+=1
+
+
+
+        except:
+            msg = QtWidgets.QMessageBox()
+            msg.setIcon(QtWidgets.QMessageBox.Critical)
+            msg.setText("     Ошибка    ")
+            msg.setInformativeText('Неправильно, попробуй еще')
+            msg.setWindowTitle("Error")
+            msg.exec_()
+
 
 
 app = QtWidgets.QApplication([])
