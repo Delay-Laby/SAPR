@@ -448,14 +448,14 @@ class mywindow(QtWidgets.QMainWindow):
                 U.append(*delta[i+1])
                 U.append(*delta[i+1])
             U.append(*delta[-1])
-            print(b)
+          #  print(b)
            # print(delta)
            # print(U)
             self.savep(U)
             self.draw_flag = True
-            print(A)
-            print(b)
-            print(delta)
+         #   print(A)
+         #   print(b)
+         #   print(delta)
             #self.ux_ret(float(self.Rod_list[0][3]))
             #self.zavis()
     def zavis(self):  #self,U1,U2,x,n,qx
