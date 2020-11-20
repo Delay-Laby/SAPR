@@ -256,6 +256,7 @@ class mywindow(QtWidgets.QMainWindow):
 
                 else: pass
             except:
+                self.ui.Node_wiget.removeRow(self.ui.Node_wiget.currentRow())
                 msg = QtWidgets.QMessageBox()
                 msg.setIcon(QtWidgets.QMessageBox.Critical)
                 msg.setText("     Ошибка    ")
@@ -381,7 +382,7 @@ class mywindow(QtWidgets.QMainWindow):
 
 
     def processor(self):
-        if self.ui.Rod_wiget.rowCount()>0 and all(self.Rod_list[i][0]!=0 for i in range(len(self.Rod_list))):           # Проверка на не нулевую длинну и на наличие стержня
+        if self.ui.Rod_wiget.rowCount()>0 and all(self.Rod_list[i][0]!=0 for i in range(len(self.Rod_list))):           # Проверка на ненулевую длину и на наличие стержня
             A = np.eye(self.ui.Rod_wiget.rowCount()+1)
             b = np.zeros(shape=(self.ui.Rod_wiget.rowCount()+1,1))
             force=np.zeros(shape=(self.ui.Rod_wiget.rowCount()+1,1))
@@ -391,10 +392,17 @@ class mywindow(QtWidgets.QMainWindow):
 
             b+=force
             for i in range(len(self.Rod_list)):
-                qxforce[i]+=self.Rod_list[i][4]
-            qxforce[-1]+=qxforce[-2]
+                qxforce[i]+=(self.Rod_list[i][4]*self.Rod_list[i][0])
+            qxforce[-1]+=qxforce[-2]*self.Rod_list[-1][0]
             for i in  range(len(self.Rod_list)-1,0,-1):
-                qxforce[i]+=self.Rod_list[i-1][4]
+                qxforce[i]+=(self.Rod_list[i-1][4]*self.Rod_list[i-1][0])
+            if self.z==1:
+                qxforce[0]=0
+            elif self.z == 2:
+                qxforce[-1] = 0
+            elif self.z == 3:
+                qxforce[0] = 0
+                qxforce[-1] = 0
             b+=qxforce/2
 
             for i in range(self.ui.Rod_wiget.rowCount()):
@@ -440,10 +448,14 @@ class mywindow(QtWidgets.QMainWindow):
                 U.append(*delta[i+1])
                 U.append(*delta[i+1])
             U.append(*delta[-1])
+            print(b)
            # print(delta)
            # print(U)
             self.savep(U)
             self.draw_flag = True
+            print(A)
+            print(b)
+            print(delta)
             #self.ux_ret(float(self.Rod_list[0][3]))
             #self.zavis()
     def zavis(self):  #self,U1,U2,x,n,qx
@@ -504,6 +516,7 @@ class mywindow(QtWidgets.QMainWindow):
             plt.axhline(0, color='k')
             plt.show()
 
+    
     def sigm_plot(self):
         if self.draw_flag:
             step = 0.01  # шаг дискретизации на графике
@@ -600,6 +613,8 @@ class mywindow(QtWidgets.QMainWindow):
             for i in range(self.ui.tableWidget.rowCount()):
                 self.ui.tableWidget.removeRow(0)
             p = float(self.ui.lineEdit_5.text())
+            if p == 0:
+                p= sum([i[0] for i in self.Rod_list]) +1
             curr_step = p
             i = 0
             j=0
